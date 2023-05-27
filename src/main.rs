@@ -182,7 +182,7 @@ fn main() {
     }
     // Iterate through an old BAM file to generate a new pruned BAM file.
     let mut prune_bam = bam::Writer::from_path("./prunning.bam", &header, bam::Format::Bam).expect("creat prunning.bam error !");
-    let mut bamm: Reader = Reader::from_path("./merge.bam").unwrap();
+    // let mut bamm: Reader = Reader::from_path("./merge.bam").unwrap();
     for read in bamm.rc_records(){
         let read = read.expect("Failure parsing Bam file");
         let mut a :u32 ;
