@@ -24,46 +24,53 @@ enum Subcli {
         allele: String,
         /// sample.clean.bam
         #[arg(short = 'b',long = "bam",required=true)]
-        bam:String,
+        bam_f:String,
     },
     
 }
 
 
-
+#[warn(unreachable_patterns)]
 #[warn(unused_imports)]
 #[warn(unused_variables)]
 #[warn(unused_imports)]
 fn main() {
     let arg = Args::parse();
-    let mut alleles: String = String::from("./Allele.ctg.table");
-    let mut bamm: String = String::from("./sample.clean.bam");
-    match arg.command {
-        Subcli::fast { allele, bam } =>{
-            alleles = allele;
-            bamm = bam;
+    // let mut alleles: String = String::from("./Allele.ctg.table");
+    // let mut bam: String = String::from("./sample.clean.bam");
+    let (alleles, bam) = match arg.command {
+        Subcli::fast { allele, bam_f } =>  (allele, bam_f),
+        _ => {
+            eprint!("error  command !");
+            std::process::exit(1);
+
         },
-        _ => eprint!("error!"),
-    }
+    };
     let alleles = table_alle::read_table(&alleles);
-    let mut bamm: Reader = Reader::from_path(&bamm).unwrap();
+    let mut bamm: Reader = Reader::from_path(&bam).unwrap();
 
 
-    // 获取header 信息
-    let mut contigs_id: Vec<String> = Vec::new();
+    // 获取header 信息, 同时记录bam 文件中ref index 
+    let mut contigs_id: Vec<u32> = Vec::new();
     let header = bam::Header::from_template(bamm.header());
+    let index2id: HeaderView = HeaderView::from_header(&header);
     for (_key, records) in header.to_hashmap(){
         for record in records{
-            contigs_id.push(record["SN"].clone())
+            if let Some(val) = record.get("SN"){
+                let a_index = index2id.tid(val.as_ref()).expect("ref name transform error!");
+                contigs_id.push(a_index)
+            }
+            
         }
     }
-    let mut congtig_index = HashMap::with_capacity(contigs_id.len());
-    for (index, value) in contigs_id.iter().enumerate(){
-        congtig_index.insert(value, index);
-    }
+
+    // let mut congtig_index = HashMap::with_capacity(contigs_id.len());
+    // for (index, value) in contigs_id.iter().enumerate(){
+    //     congtig_index.insert(value, index);
+    // }
 
     let mut pairdb:HashMap<u32,HashMap<u32,u32 >> = HashMap::new();
-    let mut ctgdb: HashMap<u32, u32> = HashMap::with_capacity(contigs_id.len());
+    // let mut ctgdb: HashMap<u32, u32> = HashMap::with_capacity(contigs_id.len());
     for read in bamm.rc_records(){
         let read = read.expect("Failure parsing Bam file");
         let mut a :u32 ;
@@ -81,13 +88,13 @@ fn main() {
             let count = a_entry.entry(b).or_insert(0);
             *count += 1;
 
-            ctgdb.entry(a).and_modify(|x |*x += 1).or_insert(1);
-            ctgdb.entry(b).and_modify(|x |*x += 1).or_insert(1);
+            // ctgdb.entry(a).and_modify(|x |*x += 1).or_insert(1);
+            // ctgdb.entry(b).and_modify(|x |*x += 1).or_insert(1);
 
 
         }
     }
-    let index2id: HeaderView = HeaderView::from_header(&header);
+    
 
 
 
@@ -95,12 +102,13 @@ fn main() {
 
 
     
-    let mut removedb: HashMap<u32, HashSet<u32>> = HashMap::new();
+
     let mut allremovedb: HashMap<u32, HashSet<u32>> = HashMap::new();
     for allele in alleles.clone(){
         for i in 2..allele.len() - 1{
-            for j in (i as usize + 1) .. allele.len(){
-                // https://rust-bio.github.io/rust-htslib/rust_htslib/bam/record/struct.Record.html#method.tid ref_name to index
+            for j in (i  + 1) .. allele.len(){
+                // https://docs.rs/rust-htslib/latest/rust_htslib/bam/struct.HeaderView.html#method.tid ref_name to index
+                // println!("{}-{}",&allele[i],&allele[j]);
                 let a_index = index2id.tid(&allele[i].as_ref()).expect("ref name transform error!");
                 let b_index = index2id.tid(&allele[j].as_ref()).expect("ref name transform error!");
                 // let a_index = &allele[i].name2tid().expect("Invalid reference sequence name");  
@@ -116,7 +124,7 @@ fn main() {
                     a = b_index;
                     b = a_index;
                 }
-                removedb.entry(a ).or_insert(HashSet::new()).insert(b );
+
                 allremovedb.entry(a ).or_insert(HashSet::new()).insert(b );
                 
             }
@@ -125,12 +133,12 @@ fn main() {
 
 
     for allele in alleles{   
-        for (&key, _value) in &ctgdb{
+        for &key in &contigs_id{
             let mut retaindb: HashMap<u32, u32> = HashMap::with_capacity(1_usize);
 
             let mut signal_value = 0;
             for i in 2..allele.len(){
-                let ii = index2id.tid(allele[i].as_ref()).expect("ref name transform error!");
+                let ii: u32 = index2id.tid(allele[i].as_ref()).expect("ref name transform error!");
                 let a: u32 ;
                 let b: u32 ;
                 if key == ii {
@@ -142,7 +150,7 @@ fn main() {
                     a = key;
                     b = ii;
                 }
-                if removedb.contains_key(&a) && removedb[&a].contains(&b){
+                if allremovedb.contains_key(&a) && allremovedb[&a].contains(&b){
                     continue;
                 }
                 if !pairdb.contains_key(&a) || !pairdb[&a].contains_key(&b){
@@ -167,7 +175,7 @@ fn main() {
                             retaindb.entry(key).and_modify(|entry| *entry = ii);
                             signal_value = numr;
                         }else {
-                            print!("{}","equal");
+                            print!("{}","equal ?");
                         }
 
                     },
@@ -180,13 +188,18 @@ fn main() {
             }
         }
     }
+    //     for i in allremovedb.keys(){
+    //     println!("{}",i);
+    // }
+
     // Iterate through an old BAM file to generate a new pruned BAM file.
     let mut prune_bam = bam::Writer::from_path("./prunning.bam", &header, bam::Format::Bam).expect("creat prunning.bam error !");
-    // let mut bamm: Reader = Reader::from_path("./merge.bam").unwrap();
+    let mut bamm: Reader = Reader::from_path(&bam).unwrap();
     for read in bamm.rc_records(){
         let read = read.expect("Failure parsing Bam file");
         let mut a :u32 ;
         let mut b :u32 ;
+        // println!("{} ------ {}", read.tid(), read.mtid());
         if read.tid() == read.mtid(){
             prune_bam.write(&read).expect("write read error !");
             continue;
@@ -201,7 +214,7 @@ fn main() {
         if allremovedb.get_key_value(&a).is_some() && allremovedb[&a].contains(&b){
             continue;
         }
-        prune_bam.write(&read).expect_err("write read error !");
+        prune_bam.write(&read).expect("write read error !");
     }
     
 }
