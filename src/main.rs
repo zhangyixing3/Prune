@@ -97,10 +97,6 @@ fn main() {
     
 
 
-
-
-
-
     
 
     let mut allremovedb: HashMap<u32, HashSet<u32>> = HashMap::new();
@@ -134,6 +130,7 @@ fn main() {
 
     for allele in alleles{   
         for &key in &contigs_id{
+            
             let mut retaindb: HashMap<u32, u32> = HashMap::with_capacity(1_usize);
 
             let mut signal_value = 0;
@@ -157,6 +154,15 @@ fn main() {
                     continue;
                 }
                 let numr = pairdb[&a][&b];
+                // if std::str::from_utf8(index2id.tid2name(key)).unwrap() == "utg000792l"{
+                //     println!("{}-{}--{:?}",allele[i],numr, retaindb);
+                // }
+                // if numr == 14_u32 || signal_value == 14_u32 {
+                //     if let Some(&v) = retaindb.get(&key){
+                //         println!("numr is {}, signal_value is {}, retain is {}", numr, signal_value, v);
+                //     }
+                    
+                // }
                 match  retaindb.get(&key) {
                     Some(&value) =>{ // 已经有数据，需要比较选出大的值
                         if numr < signal_value {
@@ -180,11 +186,12 @@ fn main() {
 
                     },
                     None => {
-                        retaindb.entry(key).and_modify(|entry| *entry = ii);
+                        retaindb.entry(key).or_insert(ii);
                         signal_value = numr;
                         
                     },     
                 }
+                // println!("{:?}",retaindb);
             }
         }
     }
