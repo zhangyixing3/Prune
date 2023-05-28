@@ -8,7 +8,7 @@ pub fn read_table(file:&str) -> Vec<Vec<String>>{
     let mut lines:Vec<Vec<String>> = Vec::new();
     let reader = BufReader::new(&f);
     for line in reader.lines(){
-        let line:Vec<String> = line.unwrap().split('\t').map(|x| x.to_string()).collect();
+        let line:Vec<String> = line.unwrap().trim().split('\t').map(|x| x.to_string()).collect();
         if line.len() < 3{
             panic!("The Allele.ctg.table file must have three columns")
         }else if line.len() == 3 {
