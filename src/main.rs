@@ -165,11 +165,11 @@ fn main() {
                 // }
                 match  retaindb.get(&key) {
                     Some(&value) =>{ // 已经有数据，需要比较选出大的值
-                        if numr < signal_value {
+                        if numr <= signal_value {
                             allremovedb.entry(a).or_insert(HashSet::new()).insert(b);
                             // retaindb.entry(i as u32).and_modify(|entry| *entry = b);
                             // signal_value = numr;
-                        }else if numr > signal_value {
+                        }else {
 
                             if value > key{
                                 allremovedb.entry(key).or_insert(HashSet::new()).insert(value);
@@ -180,8 +180,6 @@ fn main() {
                             // allremovedb.entry(a).or_insert(HashSet::new()).insert(b);
                             retaindb.entry(key).and_modify(|entry| *entry = ii);
                             signal_value = numr;
-                        }else {
-                            print!("{}","equal ?");
                         }
 
                     },
