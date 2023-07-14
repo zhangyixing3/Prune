@@ -64,10 +64,7 @@ fn main() {
         }
     }
 
-    // let mut congtig_index = HashMap::with_capacity(contigs_id.len());
-    // for (index, value) in contigs_id.iter().enumerate(){
-    //     congtig_index.insert(value, index);
-    // }
+
 
     let mut pairdb:HashMap<u32,HashMap<u32,u32 >> = HashMap::new();
     // let mut ctgdb: HashMap<u32, u32> = HashMap::with_capacity(contigs_id.len());
@@ -87,9 +84,6 @@ fn main() {
             let a_entry = pairdb.entry(a).or_insert(HashMap::new());
             let count = a_entry.entry(b).or_insert(0);
             *count += 1;
-
-            // ctgdb.entry(a).and_modify(|x |*x += 1).or_insert(1);
-            // ctgdb.entry(b).and_modify(|x |*x += 1).or_insert(1);
 
 
         }
@@ -147,22 +141,13 @@ fn main() {
                     a = key;
                     b = ii;
                 }
-                if allremovedb.contains_key(&a) && allremovedb[&a].contains(&b){
-                    continue;
-                }
+                // if allremovedb.contains_key(&a) && allremovedb[&a].contains(&b){
+                //     continue;
+                // }
                 if !pairdb.contains_key(&a) || !pairdb[&a].contains_key(&b){
                     continue;
                 }
                 let numr = pairdb[&a][&b];
-                // if std::str::from_utf8(index2id.tid2name(key)).unwrap() == "utg000792l"{
-                //     println!("{}-{}--{:?}",allele[i],numr, retaindb);
-                // }
-                // if numr == 14_u32 || signal_value == 14_u32 {
-                //     if let Some(&v) = retaindb.get(&key){
-                //         println!("numr is {}, signal_value is {}, retain is {}", numr, signal_value, v);
-                //     }
-                    
-                // }
                 match  retaindb.get(&key) {
                     Some(&value) =>{ // 已经有数据，需要比较选出大的值
                         if numr <= signal_value {
@@ -178,13 +163,14 @@ fn main() {
                             }
                             
                             // allremovedb.entry(a).or_insert(HashSet::new()).insert(b);
-                            retaindb.entry(key).and_modify(|entry| *entry = ii);
+                            retaindb.insert(key, ii);
                             signal_value = numr;
                         }
 
                     },
                     None => {
-                        retaindb.entry(key).or_insert(ii);
+                        // retaindb.entry(key).or_insert(ii);
+                        retaindb.insert(key, ii);
                         signal_value = numr;
                         
                     },     
@@ -225,3 +211,7 @@ fn main() {
 }
 
     
+
+
+
+
